@@ -1,5 +1,86 @@
 <template>
   <div class="app-container">
+    <el-dialog
+      :visible.sync="detailFormVisible"
+      :title="'详细 '+detailForm.productId"
+      width="600"
+      :append-to-body="true"
+    >
+      <el-form :model="detailForm" label-width="80px">
+        <el-form-item label="商品名">
+          <el-input v-model="detailForm.title" autocomplete="off"/>
+        </el-form-item>
+        <el-form-item label="品牌">
+          <el-row>
+            <el-col :span="6">
+              <el-input v-model="detailForm.brandId" placeholder="品牌ID"/>
+            </el-col>
+            <el-col :span="2" style="margin-left: 15px">品牌名</el-col>
+            <el-col :span="6">
+              <el-tooltip effect="dark" :content="detailForm.brandShowName" placement="left">
+                <el-input v-model="detailForm.brandShowName" placeholder="品牌名" disabled/>
+              </el-tooltip>
+            </el-col>
+            <el-col :span="2" style="margin-left: 15px">序列号</el-col>
+            <el-col :span="6">
+              <el-tooltip effect="dark" :content="detailForm.brandStoreSn" placement="left">
+                <el-input v-model="detailForm.brandStoreSn" placeholder="品牌名" disabled/>
+              </el-tooltip>
+            </el-col>
+          </el-row>
+        </el-form-item>
+        <el-form-item label="SKU">
+          <el-select v-model="detailForm.skuId">
+            <el-tooltip v-for="(sku) in detailForm.sku" :key="sku.skuId" effect="dark" placement="right">
+              <div slot="content">
+                Sku: {{ sku.sku }} <br>
+                SkuID: {{ sku.skuId }} <br>
+                尺寸ID: {{ sku.sizeDetailId }} <br>
+                标价: {{ sku.saleMarketPrice }} <br>
+                折扣: {{ sku.saleDiscount }}<br>
+                售价: {{ sku.salePrice }}<br>
+              </div>
+              <el-option :label="sku.skuId" :value="sku.skuId"/>
+            </el-tooltip>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="detailForm.status">
+            <el-option label="正常" value="0"/>
+            <el-option label="禁用" value="1"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="属性">
+          <el-row v-for="(attr,index) in detailForm.attrs" :key="index">
+            <el-col :span="6">
+              <el-input v-model="detailForm.attrs[index].name" :disabled="attr.isDel"/>
+            </el-col>
+            <el-col style="margin-left: 5px" :span="6">
+              <el-input v-model="detailForm.attrs[index].value" :disabled="attr.isDel"/>
+            </el-col>
+            <el-col style="margin-left: 10px" :span="1">
+              <el-tooltip effect="dark" :content="attr.isDel?'撤销':'删除'" placement="right">
+                <el-button
+                  size="mini"
+                  :icon="attr.isDel?'el-icon-refresh':'el-icon-remove'"
+                  circle
+                  @click="deleteAttr(detailForm.attrs[index])"
+                />
+              </el-tooltip>
+            </el-col>
+          </el-row>
+          <el-tooltip effect="dark" content="添加属性" placement="right">
+            <el-button size="mini" type="primary" icon="el-icon-plus" @click="addAttr"/>
+          </el-tooltip>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="detailFormVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitDetail">修改</el-button>
+        </div>
+      </template>
+    </el-dialog>
     <el-form :inline="true" :model="queryForm">
       <el-form-item label="品牌名">
         <el-input v-model="queryForm.brandName" placeholder="输入品牌名" clearable/>
@@ -11,8 +92,11 @@
           clearable
           @change="stCategoryChange"
         >
-          <el-option v-for="(stCategory) in categoryList" :label="stCategory.categoryTitle"
-                     :value="stCategory.categoryId"
+          <el-option
+            v-for="(stCategory,index) in categoryList"
+            :key="index"
+            :label="stCategory.categoryTitle"
+            :value="stCategory.categoryId"
           />
         </el-select>
       </el-form-item>
@@ -23,8 +107,11 @@
           clearable
           @change="$forceUpdate();"
         >
-          <el-option v-for="(ndCategory) in ndCategoryList" :label="ndCategory.categoryTitle"
-                     :value="ndCategory.categoryId"
+          <el-option
+            v-for="(ndCategory,index) in ndCategoryList"
+            :key="index"
+            :label="ndCategory.categoryTitle"
+            :value="ndCategory.categoryId"
           />
         </el-select>
       </el-form-item>
@@ -32,8 +119,14 @@
         <el-button type="primary" @click="query">查询</el-button>
       </el-form-item>
     </el-form>
-    <el-table v-loading="listLoading" :data="list" element-loading-text="Loading" :cell-style="{padding: '0'}" border
-              fit highlight-current-row
+    <el-table
+      v-loading="listLoading"
+      :data="list"
+      element-loading-text="Loading"
+      :cell-style="{padding: '0'}"
+      border
+      fit
+      highlight-current-row
     >
       <el-table-column type="selection" width="40"/>
       <el-table-column align="center" label="商品ID" width="180">
@@ -53,10 +146,11 @@
       </el-table-column>
       <el-table-column label="预览图" width="80">
         <template slot-scope="scope">
-          <el-image style="width: 50px; height: 50px" :src="scope.row.squareImage"
-                    :preview-src-list="[scope.row.squareImage]" fit="cover"
-          >
-          </el-image>
+          <el-image
+            style="width: 50px; height: 50px"
+            :src="scope.row.squareImage"
+            :preview-src-list="[scope.row.squareImage]"
+          />
         </template>
       </el-table-column>
 
@@ -66,20 +160,20 @@
         </template>
       </el-table-column>
       <el-table-column fixed="right" label="操作" min-width="150">
-        <template #default>
-          <el-button type="primary" size="small" @click="checkDetail()">详细</el-button>
+        <template slot-scope="scope">
+          <el-button type="primary" size="small" @click="checkDetail(scope.row)">详细</el-button>
           <el-button type="danger" size="small" @click="delProduct()">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <div class="demo-pagination-block">
       <el-pagination
-        v-model:current-page="number"
-        v-model:page-size="size"
+        :current-page="number"
+        :page-size="size"
         :page-sizes="[5, 10, 15, 20]"
-        :small="small"
-        :disabled="disabled"
-        :background="background"
+        :small="false"
+        :disabled="false"
+        :background="true"
         layout="total, sizes, prev, pager, next, jumper"
         :total="totalElements"
         @size-change="handleSizeChange"
@@ -87,11 +181,11 @@
       />
     </div>
   </div>
-  </div>
 </template>
 
 <script>
-import { getProductPage } from '@/api/product'
+import { Message } from 'element-ui'
+import { getProductPage, getProductInfo, getSku, updateProduct } from '@/api/product'
 import { getCategory } from '@/api/category'
 import querystring from 'querystring'
 
@@ -115,7 +209,9 @@ export default {
       listLoading: true,
       queryForm: {},
       categoryList: [],
-      ndCategoryList: []
+      ndCategoryList: [],
+      detailFormVisible: false,
+      detailForm: {}
     }
   },
   created() {
@@ -126,6 +222,42 @@ export default {
     })
   },
   methods: {
+    submitDetail() {
+      this.detailForm.attrs = this.detailForm.attrs.filter(item =>
+        !item.isDel &&
+        item.name !== '' &&
+        item.name !== undefined &&
+        item.value !== '' &&
+        item.value !== undefined)
+      updateProduct(this.detailForm).then(resp => {
+        Message({
+          message: resp.msg,
+          type: 'success',
+          duration: 3 * 1000
+        })
+        this.detailFormVisible = false
+      })
+    },
+    addAttr() {
+      this.detailForm.attrs.push({})
+    },
+    deleteAttr(attr) {
+      const index = this.detailForm.attrs.indexOf(attr)
+      this.detailForm.attrs[index]['isDel'] = !attr['isDel']
+      this.$forceUpdate()
+    },
+    checkDetail(row) {
+      getProductInfo({ productId: row.productId }).then(resp => {
+        const { data } = resp
+        this.detailForm = data
+        this.detailFormVisible = true
+        getSku({ productId: row.productId }).then(resp => {
+          const { data } = resp
+          this.detailForm.sku = data
+          this.$forceUpdate()
+        })
+      })
+    },
     stCategoryChange(value) {
       this.ndCategoryList = []
       this.queryForm.ndCategoryId = ''
