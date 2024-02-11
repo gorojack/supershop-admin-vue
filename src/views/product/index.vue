@@ -5,6 +5,7 @@
       :title="'详细 '+detailForm.productId"
       width="600"
       :append-to-body="true"
+      class="roll-dialog"
     >
       <el-form :model="detailForm" label-width="80px">
         <el-form-item label="商品名">
@@ -51,20 +52,20 @@
           </el-select>
         </el-form-item>
         <el-form-item label="属性">
-          <el-row v-for="(attr,index) in detailForm.attrs" :key="index">
+          <el-row v-for="(prop,index) in detailForm.props" :key="index">
             <el-col :span="6">
-              <el-input v-model="detailForm.attrs[index].name" :disabled="attr.isDel"/>
+              <el-input v-model="detailForm.props[index].name" :disabled="prop.isDel"/>
             </el-col>
             <el-col style="margin-left: 5px" :span="6">
-              <el-input v-model="detailForm.attrs[index].value" :disabled="attr.isDel"/>
+              <el-input v-model="detailForm.props[index].value" :disabled="prop.isDel"/>
             </el-col>
             <el-col style="margin-left: 10px" :span="1">
-              <el-tooltip effect="dark" :content="attr.isDel?'撤销':'删除'" placement="right">
+              <el-tooltip effect="dark" :content="prop.isDel?'撤销':'删除'" placement="right">
                 <el-button
                   size="mini"
-                  :icon="attr.isDel?'el-icon-refresh':'el-icon-remove'"
+                  :icon="prop.isDel?'el-icon-refresh':'el-icon-remove'"
                   circle
-                  @click="deleteAttr(detailForm.attrs[index])"
+                  @click="deleteAttr(detailForm.props[index])"
                 />
               </el-tooltip>
             </el-col>
@@ -223,7 +224,7 @@ export default {
   },
   methods: {
     submitDetail() {
-      this.detailForm.attrs = this.detailForm.attrs.filter(item =>
+      this.detailForm.props = this.detailForm.props.filter(item =>
         !item.isDel &&
         item.name !== '' &&
         item.name !== undefined &&
@@ -239,11 +240,11 @@ export default {
       })
     },
     addAttr() {
-      this.detailForm.attrs.push({})
+      this.detailForm.props.push({})
     },
-    deleteAttr(attr) {
-      const index = this.detailForm.attrs.indexOf(attr)
-      this.detailForm.attrs[index]['isDel'] = !attr['isDel']
+    deleteAttr(prop) {
+      const index = this.detailForm.props.indexOf(prop)
+      this.detailForm.props[index]['isDel'] = !prop['isDel']
       this.$forceUpdate()
     },
     checkDetail(row) {
@@ -312,3 +313,11 @@ export default {
   }
 }
 </script>
+
+<style>
+.roll-dialog .el-dialog__body {
+  padding: 3px 30px;
+  overflow-y: auto;
+  height: calc(100vh - 30vh);
+}
+</style>
