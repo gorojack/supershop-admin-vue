@@ -67,7 +67,18 @@ export const constantRoutes = [
       }
     ]
   },
-
+  {
+    path: '/brand',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        name: 'Brand',
+        component: () => import('@/views/brand/index'),
+        meta: { title: '品牌', icon: 'brand' }
+      }
+    ]
+  },
   {
     path: '/example',
     component: Layout,
